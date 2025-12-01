@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Dopravní deník</title>
+
+<style>
+    body {
+        background: #111827;
+        margin: 0;
+        padding: 20px;
+        font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    /* LOGIN: STANICA + DISPEČER */
+    .login-screen {
+        position: fixed;
+        inset: 0;
+        background: rgba(15,23,42,0.96);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        color: #e5e7eb;
+    }
+
+    .login-box {
+        background: #020617;
+        border: 1px solid #4b5563;
+        border-radius: 8px;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 18px rgba(0,0,0,0.7);
+    }
+
+    .login-box h1 {
+        margin: 0 0 10px;
+        font-size: 18px;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .login-box label {
+        display: block;
+        margin-top: 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #9ca3af;
+    }
+
+    .login-box input {
+        width: 100%;
+        padding: 7px 8px;
+        border-radius: 4px;
+        border: 1px solid #4b5563;
+        background: #020617;
+        color: white;
+        margin-top: 3px;
+        box-sizing: border-box;
+    }
+
+    .login-box button {
+        margin-top: 14px;
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #3b82f6;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        font-size: 13px;
+        text-transform: uppercase;
+    }
+
+    .login-box button:hover {
+        background: #1d4ed8;
+    }
+
+    /* HLAVNÁ APLIKÁCIA */
+    #app { display: none; }
+
+    .frame {
+        max-width: 1300px;
+        margin: auto;
+        background: white;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #999;
+    }
+
+    h2 {
+        margin: 0 0 4px;
+        font-size: 16px;
+        text-transform: uppercase;
+        text-align: center;
+        letter-spacing: .05em;
+    }
+
+    .meta {
+        font-size: 11px;
+        text-align: center;
+        color: #4b5563;
+        margin-bottom: 10px;
+    }
+
+    .meta span {
+        margin: 0 8px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    th, td {
+        border: 1px solid #999;
+        padding: 3px;
+        text-align: center;
+        vertical-align: top;
+    }
+
+    th {
+        background: #e5e7eb;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    input, textarea {
+        width: 100%;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    input:focus, textarea:focus {
+        background: #eef;
+        outline: none;
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 45px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        margin-bottom: 10px;
+        margin-right: 6px;
+        cursor: pointer;
+        border: 1px solid #888;
+        background: #f3f4f6;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    .btn:hover { background: #e5e7eb; }
+
+    .note { background: #fafafa; }
+    .delay { font-weight: bold; }
+    .time-cell input { display: block; width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN: STANICA + DISPEČER -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-box">
+        <h1>Dopravní deník</h1>
+
+        <label for="stationInput">Meno stanice</label>
+        <!-- Benešov ako návrh (placeholder) -->
+        <input id="stationInput" type="text" placeholder="Benešov">
+
+        <label for="dispatcherInput">Meno dispečera</label>
+        <input id="dispatcherInput" type="text" placeholder="např. Novák">
+
+        <button onclick="startApp()">Pokračovať</button>
+    </div>
+</div>
+
+<!-- JEDINÁ TABUĽKA DENNÍKA -->
+<div id="app">
+    <div class="frame">
+        <h2>Dopravní deník</h2>
+        <div class="meta">
+            <span>Stanice: <b id="stationLabel">-</b></span>
+            <span>Dispečer: <b id="dispatcherLabel">-</b></span>
+            <span>Dátum: <b id="todayLabel">-</b></span>
+        </div>
+
+        <button class="btn" onclick="addTrain()">+ Přidat vlak</button>
+
+        <table id="denik">
+            <thead>
+            <tr>
+                <th style="width:40px;">Poř.</th>
+                <th style="width:80px;">Číslo vlaku</th>
+                <th style="width:60px;">Druh</th>
+
+                <th style="width:70px;">Kolej<br>příjezdu</th>
+                <th style="width:90px;">Příjezd<br>(plán/skut)</th>
+                <th style="width:50px;">+/−</th>
+
+                <th style="width:70px;">Kolej<br>odjezdu</th>
+                <th style="width:90px;">Odjezd<br>(plán/skut)</th>
+                <th style="width:50px;">+/−</th>
+
+                <th style="width:120px;">Odjezd sousední<br>(plán/skut)</th>
+
+                <th style="width:90px;">Souhlas<br>DAL/DOSTAL</th>
+
+                <th>Poznámka</th>
+                <th style="width:40px;">X</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+/* Spustenie po zadaní stanice a dispečera */
+function startApp() {
+    const station = document.getElementById('stationInput').value.trim() || '–';
+    const dispatcher = document.getElementById('dispatcherInput').value.trim() || '–';
+
+    document.getElementById('stationLabel').textContent = station;
+    document.getElementById('dispatcherLabel').textContent = dispatcher;
+
+    const d = new Date();
+    document.getElementById('todayLabel').textContent = d.toLocaleDateString('cs-CZ');
+
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+}
+
+/* Pridanie vlaku – 2 riadky */
+function addTrain() {
+    const tbody = document.querySelector("#denik tbody");
+
+    // spočítame už existujúce vlaky (2 riadky = 1 vlak)
+    const currentRows = tbody.querySelectorAll("tr").length;
+    const currentTrains = currentRows / 2;
+    const por = currentTrains + 1;
+
+    const r1 = document.createElement("tr");
+    const r2 = document.createElement("tr");
+
+    r1.innerHTML = `
+        <td rowspan="2">${por}</td>
+        <td rowspan="2"><input placeholder="170013"></td>
+        <td rowspan="2"><input placeholder="Os, Sp, R"></td>
+
+        <td><input type="text" placeholder="kolej"></td>
+
+        <td class="time-cell" data-type="arr">
+            <input type="time" class="plan" ondblclick="now(this)">
+            <input type="time" class="actual" onchange="calcDelay(this)" ondblclick="now(this)">
+        </td>
+        <td class="delay arr-delay">0</td>
+
+        <td><input type="text" placeholder="kolej"></td>
+
+        <td class="time-cell" data-type="dep">
+            <input type="time" class="plan" ondblclick="now(this)">
+            <input type="time" class="actual" onchange="calcDelay(this)" ondblclick="now(this)">
+        </td>
+        <td class="delay dep-delay">0</td>
+
+        <td rowspan="2" class="time-cell" data-type="nei">
+            <input type="time" class="plan" ondblclick="now(this)">
+            <input type="time" class="actual" ondblclick="now(this)">
+        </td>
+
+        <td rowspan="2">
+            <input type="time" class="souhlasDal" ondblclick="now(this)"><br>
+            <input type="time" class="souhlasDostal" ondblclick="now(this)">
+        </td>
+
+        <td rowspan="2" class="note">
+            <textarea placeholder="poznámka / mimořádnost"></textarea>
+        </td>
+
+        <td rowspan="2">
+            <button onclick="removeTrain(this)">X</button>
+        </td>
+    `;
+
+    r2.innerHTML = `
+        <td></td>
+        <td></td>
+        <td></td>
+
+        <td></td>
+        <td></td>
+        <td></td>
+    `;
+
+    tbody.appendChild(r1);
+    tbody.appendChild(r2);
+}
+
+/* Odstránenie vlaku (2 riadky) + prečíslovanie */
+function removeTrain(btn) {
+    const top = btn.parentElement.parentElement;
+    const bottom = top.nextElementSibling;
+    if (bottom) bottom.remove();
+    top.remove();
+
+    renumberTrains();
+}
+
+/* Prečíslovanie Poř. po vymazaní / úpravách */
+function renumberTrains() {
+    const tbody = document.querySelector("#denik tbody");
+    const rows = tbody.querySelectorAll("tr");
+    let index = 1;
+
+    for (let i = 0; i < rows.length; i += 2) {
+        const r1 = rows[i];
+        if (!r1) break;
+        const firstCell = r1.querySelector("td");
+        if (firstCell) {
+            firstCell.textContent = index;
+            index++;
+        }
+    }
+}
+
+/* Dvojklik = aktuálny čas */
+function now(input) {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2,'0');
+    const m = String(d.getMinutes()).padStart(2,'0');
+    input.value = `${h}:${m}`;
+}
+
+/* Výpočet zpoždění */
+function calcDelay(actualInput) {
+    const timeCell = actualInput.parentElement;
+    const plan = timeCell.querySelector(".plan").value;
+    const actual = actualInput.value;
+
+    const delayCell = getDelayCell(timeCell);
+    if (!delayCell) return;
+
+    if (!plan || !actual) {
+        delayCell.textContent = "";
+        return;
+    }
+
+    const diff = minutesDiff(plan, actual);
+    if (diff > 0) delayCell.textContent = "+" + diff;
+    else if (diff < 0) delayCell.textContent = diff;
+    else delayCell.textContent = "0";
+}
+
+function getDelayCell(timeCell) {
+    const row = timeCell.parentElement;
+    if (timeCell.dataset.type === "arr") return row.querySelector(".arr-delay");
+    if (timeCell.dataset.type === "dep") return row.querySelector(".dep-delay");
+    return null; // sousední nemá zpoždění
+}
+
+function minutesDiff(p, a) {
+    const [ph, pm] = p.split(":").map(Number);
+    const [ah, am] = a.split(":").map(Number);
+    return (ah*60 + am) - (ph*60 + pm);
+}
+</script>
+
+</body>
+</html>
